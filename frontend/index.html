@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DeepSearch - Biological rPPG Deepfake Recognition</title>
+  
+  <!-- Modern Typography (Inter & JetBrains Mono) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Local Vendor Libraries (100% Offline Support) -->
+  <script src="js/vendor/lucide.min.js"></script>
+  <script src="js/vendor/chart.umd.min.js"></script>
+
+  <!-- DeepSearch Stylesheet -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- =========================================================================
+       TOP NAVIGATION BAR
+       ========================================================================= -->
+  <header class="top-navbar">
+    <div class="brand-section">
+      <div class="brand-icon">
+        <i data-lucide="shield-alert" style="width: 18px; height: 18px;"></i>
+      </div>
+      <div class="brand-name">DEEPSEARCH</div>
+      <div class="version-badge">BIOLOGICAL<br>FORENSICS V1.0</div>
+    </div>
+
+    <!-- Center Mode Switcher Tabs -->
+    <nav class="nav-tabs">
+      <button class="nav-tab active" id="tab-file">
+        <i data-lucide="video" style="width: 15px; height: 15px;"></i>
+        <span>Video File Inspector</span>
+      </button>
+      <button class="nav-tab" id="tab-webcam">
+        <i data-lucide="camera" style="width: 15px; height: 15px;"></i>
+        <span>Live Webcam Stream</span>
+      </button>
+      <button class="nav-tab" id="tab-batch">
+        <i data-lucide="layers" style="width: 15px; height: 15px;"></i>
+        <span>Batch Benchmark</span>
+      </button>
+    </nav>
+
+    <!-- Telemetry Status Badges & Preset Dropdown -->
+    <div class="telemetry-bar">
+      <div class="telemetry-item">
+        <div class="telemetry-status-dot idle" id="system-status-dot"></div>
+        <span class="telemetry-label">SYSTEM:</span>
+        <span class="telemetry-value" id="system-status-text" style="color: var(--text-muted);">STANDBY</span>
+      </div>
+
+      <div class="telemetry-item">
+        <span class="telemetry-label">ACC:</span>
+        <span class="telemetry-value" id="acc-text">CPU / READY</span>
+      </div>
+
+      <div class="telemetry-item">
+        <span class="telemetry-label">FPS:</span>
+        <span class="telemetry-value" id="fps-counter">--</span>
+      </div>
+
+      <div class="telemetry-item">
+        <span class="telemetry-label">LATENCY:</span>
+        <span class="telemetry-value" id="latency-counter">-- ms</span>
+      </div>
+
+      <!-- Quick Preset Demo Selector -->
+      <select class="preset-selector" id="preset-selector">
+        <option value="" selected disabled>Demo Samples (Optional)</option>
+        <option value="authentic">Load Sample: Authentic Human</option>
+        <option value="deepfake">Load Sample: Deepfake FaceSwap</option>
+        <option value="inconclusive">Load Sample: Low-Light Video</option>
+      </select>
+    </div>
+  </header>
+
+  <!-- =========================================================================
+       MAIN 3-PANEL COMMAND CENTER GRID
+       ========================================================================= -->
+  <main class="dashboard-grid">
+
+    <!-- =====================================================================
+         PANEL 1: VIDEO INPUT & ROIS (LEFT COLUMN)
+         ===================================================================== -->
+    <section class="panel" id="panel-1">
+      <div class="panel-header">
+        <div class="panel-title-group">
+          <i data-lucide="crosshair" class="panel-icon" style="width: 16px; height: 16px;"></i>
+          <h2 class="panel-title">PANEL 1: VIDEO INPUT & ROIS</h2>
+        </div>
+        <div class="panel-badge standby" id="feed-badge">
+          STANDBY (NO INPUT)
+        </div>
+      </div>
+
+      <!-- Drag & Drop Upload Zone -->
+      <div class="card" style="padding: 10px;">
+        <div class="dropzone-container" id="dropzone">
+          <input type="file" id="file-input" accept="video/mp4,video/avi,video/mov,video/webm" style="display: none;">
+          <i data-lucide="cloud-upload" class="dropzone-icon"></i>
+          <div class="dropzone-title">Drop Target Video (MP4, AVI, MOV, WEBM)</div>
+          <div class="dropzone-sub">Drag media here or click to select forensic sample</div>
+        </div>
+
+        <div class="input-actions-row">
+          <button class="action-btn" id="browse-btn">
+            <i data-lucide="folder" style="width: 14px; height: 14px;"></i>
+            Browse File
+          </button>
+          <button class="action-btn" id="webcam-btn">
+            <i data-lucide="video" style="width: 14px; height: 14px;"></i>
+            Activate Webcam
+          </button>
+        </div>
+      </div>
+
+      <!-- Video Player Viewport with Overlay Canvas -->
+      <div class="card" style="padding: 8px;">
+        <div class="video-viewport-wrapper">
+          <div class="video-status-overlay">
+            <div class="record-dot" id="record-dot"></div>
+            <span id="video-status-text">AWAITING VIDEO INPUT</span>
+          </div>
+          <video id="video-element" loop muted playsinline></video>
+          <canvas id="overlay-canvas"></canvas>
+        </div>
+
+        <!-- Scrubber & Frame Count -->
+        <div class="scrubber-container" style="margin-top: 8px;">
+          <input type="range" class="scrubber-slider" id="scrubber-slider" min="0" max="100" value="0" disabled>
+          <div class="scrubber-time-readout">
+            <span id="frame-counter-text">Frame: 0000 / 0000  Time: 00:00.0 / 00:00.0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Overlay Visual Layers & Toggle Switches -->
+      <div class="card">
+        <div class="layers-header">
+          <span>Overlay Visual Layers</span>
+          <span id="active-rois-count" style="color: var(--text-muted);">4 Ready ROIs</span>
+        </div>
+
+        <div class="toggle-group">
+          <!-- Mesh Wireframe -->
+          <label class="toggle-item">
+            <div class="toggle-label-group">
+              <i data-lucide="network" style="width: 13px; height: 13px; color: var(--accent-indigo);"></i>
+              <span>Show 3D Face Mesh Wireframe</span>
+            </div>
+            <div class="switch">
+              <input type="checkbox" id="toggle-mesh" checked>
+              <span class="slider-switch"></span>
+            </div>
+          </label>
+
+          <!-- Forehead ROI -->
+          <label class="toggle-item">
+            <div class="toggle-label-group">
+              <div class="color-dot" style="background-color: var(--roi-forehead); box-shadow: 0 0 6px var(--roi-forehead);"></div>
+              <span>Forehead ROI (#00F0FF)</span>
+            </div>
+            <div class="switch">
+              <input type="checkbox" id="toggle-forehead" checked>
+              <span class="slider-switch"></span>
+            </div>
+          </label>
+
+          <!-- Left Cheek ROI -->
+          <label class="toggle-item">
+            <div class="toggle-label-group">
+              <div class="color-dot" style="background-color: var(--roi-lcheek); box-shadow: 0 0 6px var(--roi-lcheek);"></div>
+              <span>Left Cheek ROI (#6366F1)</span>
+            </div>
+            <div class="switch">
+              <input type="checkbox" id="toggle-lcheek" checked>
+              <span class="slider-switch"></span>
+            </div>
+          </label>
+
+          <!-- Right Cheek ROI -->
+          <label class="toggle-item">
+            <div class="toggle-label-group">
+              <div class="color-dot" style="background-color: var(--roi-rcheek); box-shadow: 0 0 6px var(--roi-rcheek);"></div>
+              <span>Right Cheek ROI (#10B981)</span>
+            </div>
+            <div class="switch">
+              <input type="checkbox" id="toggle-rcheek" checked>
+              <span class="slider-switch"></span>
+            </div>
+          </label>
+
+          <!-- Chin ROI -->
+          <label class="toggle-item">
+            <div class="toggle-label-group">
+              <div class="color-dot" style="background-color: var(--roi-chin); box-shadow: 0 0 6px var(--roi-chin);"></div>
+              <span>Chin ROI (#F59E0B)</span>
+            </div>
+            <div class="switch">
+              <input type="checkbox" id="toggle-chin" checked>
+              <span class="slider-switch"></span>
+            </div>
+          </label>
+
+          <!-- Blood Volume Heatmap -->
+          <label class="toggle-item">
+            <div class="toggle-label-group">
+              <i data-lucide="flame" style="width: 13px; height: 13px; color: var(--status-critical);"></i>
+              <span>Blood Volume Pulse Heatmap</span>
+            </div>
+            <div class="switch">
+              <input type="checkbox" id="toggle-heatmap" checked>
+              <span class="slider-switch"></span>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- 4-Card Mini Telemetry Metrics -->
+      <div class="telemetry-grid-4">
+        <div class="mini-telemetry-card">
+          <div class="mini-label">Video Dimensions</div>
+          <div class="mini-value" id="video-dims-text">-- × --</div>
+        </div>
+        <div class="mini-telemetry-card">
+          <div class="mini-label">Detected Faces</div>
+          <div class="mini-value" id="detected-faces-text">0</div>
+        </div>
+        <div class="mini-telemetry-card">
+          <div class="mini-label">Illumination Index</div>
+          <div class="mini-value" id="illumination-text">--</div>
+        </div>
+        <div class="mini-telemetry-card">
+          <div class="mini-label">Color Space</div>
+          <div class="mini-value" id="colorspace-text">--</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         PANEL 2: PHYSIOLOGICAL SIGNAL WORKBENCH (CENTER COLUMN)
+         ===================================================================== -->
+    <section class="panel" id="panel-2">
+      <div class="panel-header">
+        <div class="panel-title-group">
+          <i data-lucide="activity" class="panel-icon" style="width: 16px; height: 16px;"></i>
+          <h2 class="panel-title">PANEL 2: PHYSIOLOGICAL SIGNAL WORKBENCH</h2>
+        </div>
+        
+        <!-- Legend for the 4 ROI traces -->
+        <div class="legend-group">
+          <div class="legend-item">
+            <div class="color-dot" style="background-color: var(--roi-forehead);"></div>
+            <span>Forehead</span>
+          </div>
+          <div class="legend-item">
+            <div class="color-dot" style="background-color: var(--roi-lcheek);"></div>
+            <span>L-Cheek</span>
+          </div>
+          <div class="legend-item">
+            <div class="color-dot" style="background-color: var(--roi-rcheek);"></div>
+            <span>R-Cheek</span>
+          </div>
+          <div class="legend-item">
+            <div class="color-dot" style="background-color: var(--roi-chin);"></div>
+            <span>Chin</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 1: Multi-Trace rPPG Pulse Waves -->
+      <div class="card">
+        <div class="card-title-row">
+          <div class="card-title">MULTI-TRACE RPPG BLOOD VOLUME PULSE WAVES (RAW & FILTERED)</div>
+          <div class="card-tag standby" id="wave-sync-tag">Awaiting Input</div>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="rppg-chart-canvas"></canvas>
+        </div>
+      </div>
+
+      <!-- Card 2: Spectral Power Density (FFT Frequency Domain) -->
+      <div class="card">
+        <div class="card-title-row">
+          <div class="card-title">SPECTRAL POWER DENSITY (FFT FREQUENCY DOMAIN: 0.5 - 4.0 HZ)</div>
+          <div class="card-tag" style="color: var(--text-muted);" id="fft-sample-rate-tag">Sampling: -- Hz</div>
+        </div>
+        <div class="fft-chart-wrapper">
+          <canvas id="fft-chart-canvas"></canvas>
+        </div>
+
+        <!-- FFT Metrics Readout Bar -->
+        <div class="fft-metrics-bar">
+          <div class="bpm-pill-badge" id="bpm-badge">
+            <i data-lucide="heart" class="heart-pulse-icon" id="heart-icon" style="width: 16px; height: 16px;"></i>
+            <span>Detected Heart Rate: <span id="detected-bpm-text">-- BPM (-- Hz)</span></span>
+          </div>
+
+          <div class="snr-meter-container">
+            <span>Signal-to-Noise:</span>
+            <div class="snr-track">
+              <div class="snr-fill" id="snr-fill-bar"></div>
+            </div>
+            <span class="snr-val" id="snr-val-text">-- dB</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: Algorithm Tuning & Configuration Controls -->
+      <div class="card">
+        <div class="config-bar-grid">
+          <!-- Method Selection -->
+          <div>
+            <div class="config-col-title">Extraction Method</div>
+            <div class="segmented-group">
+              <button class="segmented-btn" data-method="Green">Green</button>
+              <button class="segmented-btn active" data-method="CHROM">CHROM</button>
+              <button class="segmented-btn" data-method="POS">POS</button>
+            </div>
+          </div>
+
+          <!-- Bandpass Range -->
+          <div>
+            <div class="config-col-title">Bandpass Filter (0.7 - 3.0 Hz)</div>
+            <div class="filter-slider-wrap">
+              <input type="range" class="scrubber-slider" id="bandpass-slider" min="0.5" max="4.0" step="0.1" value="3.0">
+              <div class="filter-val-label" id="filter-val-label">42 - 180 BPM</div>
+            </div>
+          </div>
+
+          <!-- Analysis Window -->
+          <div>
+            <div class="config-col-title">Analysis Window</div>
+            <div class="segmented-group">
+              <button class="segmented-btn" data-window="5s">5s</button>
+              <button class="segmented-btn active" data-window="10s">10s</button>
+              <button class="segmented-btn" data-window="15s">15s</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         PANEL 3: FORENSIC VERDICT (RIGHT COLUMN)
+         ===================================================================== -->
+    <section class="panel" id="panel-3">
+      <div class="panel-header">
+        <div class="panel-title-group">
+          <i data-lucide="shield-check" class="panel-icon" style="width: 16px; height: 16px;"></i>
+          <h2 class="panel-title">PANEL 3: FORENSIC VERDICT</h2>
+        </div>
+        <div class="panel-badge standby" id="verdict-badge">
+          STANDBY
+        </div>
+      </div>
+
+      <!-- Hero Radial Verdict Gauge Card -->
+      <div class="card hero-verdict-card" id="verdict-card">
+        <div class="gauge-container">
+          <svg class="gauge-svg" viewBox="0 0 100 100">
+            <circle class="gauge-bg" cx="50" cy="50" r="45"></circle>
+            <circle class="gauge-progress" id="gauge-progress" cx="50" cy="50" r="45"></circle>
+          </svg>
+          <div class="gauge-inner-text">
+            <div class="gauge-score" id="gauge-score">--%</div>
+            <div class="gauge-caption" id="gauge-caption">AWAITING INPUT</div>
+          </div>
+        </div>
+
+        <div class="verdict-headline" id="verdict-headline">
+          AWAITING FORENSIC SCAN
+        </div>
+        <p class="verdict-explanation" id="verdict-explanation">
+          Upload a target video or activate the webcam to begin signal extraction and authenticity verification.
+        </p>
+      </div>
+
+      <!-- Spatial Cross-Correlation Matrix -->
+      <div class="card">
+        <div class="card-title-row">
+          <div class="card-title">SPATIAL CROSS-CORRELATION MATRIX</div>
+          <div class="card-tag" id="matrix-avg-text" style="color: var(--text-muted);">AVG: --</div>
+        </div>
+
+        <table class="matrix-container">
+          <thead>
+            <tr>
+              <th></th>
+              <th>FH</th>
+              <th>LC</th>
+              <th>RC</th>
+              <th>CH</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th>FH</th>
+              <td class="matrix-cell">--</td>
+              <td class="matrix-cell">--</td>
+              <td class="matrix-cell">--</td>
+              <td class="matrix-cell">--</td>
+            </tr>
+            <tr>
+              <th>LC</th>
+              <td class="matrix-cell">--</td>
+              <td class="matrix-cell">--</td>
+              <td class="matrix-cell">--</td>
+              <td class="matrix-cell">--</td>
+            </tr>
+            <tr>
+              <th>RC</th>
+              <td class="matrix-cell">--</td>
+              <td class="matrix-cell">--</td>
+              <td class="matrix-cell">--</td>
+              <td class="matrix-cell">--</td>
+            </tr>
+            <tr>
+              <th>CH</th>
+              <td class="matrix-cell">--</td>
+              <td class="matrix-cell">--</td>
+              <td class="matrix-cell">--</td>
+              <td class="matrix-cell">--</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Temporal Voting Window (5s Slices) -->
+      <div class="card">
+        <div class="card-title-row">
+          <div class="card-title">TEMPORAL VOTING (5S SLICES)</div>
+          <div class="card-tag" id="voting-summary-label" style="color: var(--text-muted);">0/0 Slices</div>
+        </div>
+        <div class="voting-track" id="voting-track">
+          <div class="voting-slice"></div>
+          <div class="voting-slice"></div>
+          <div class="voting-slice"></div>
+          <div class="voting-slice"></div>
+          <div class="voting-slice"></div>
+          <div class="voting-slice"></div>
+          <div class="voting-slice"></div>
+          <div class="voting-slice"></div>
+        </div>
+      </div>
+
+      <!-- Primary Action Buttons -->
+      <div class="cta-group">
+        <button class="primary-scan-btn" id="start-scan-btn" disabled>
+          <i data-lucide="scan-line" style="width: 17px; height: 17px;"></i>
+          START FORENSIC SCAN
+        </button>
+
+        <div class="secondary-actions-row">
+          <button class="reset-btn" id="reset-btn">
+            <i data-lucide="rotate-ccw" style="width: 13px; height: 13px;"></i>
+            Reset
+          </button>
+          <button class="export-btn" id="export-pdf-btn">
+            <i data-lucide="file-text" style="width: 13px; height: 13px;"></i>
+            Export PDF
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Script Inclusions -->
+  <script src="js/charts.js"></script>
+  <script src="js/video_overlay.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

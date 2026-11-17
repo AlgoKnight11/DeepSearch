@@ -1,0 +1,25 @@
+# ==============================================================================
+# DeepSearch: Biological rPPG Deepfake Recognition
+# Project Dependencies
+# Install with: pip install -r requirements.txt
+# ==============================================================================
+
+# Web Framework & ASGI Server
+fastapi>=0.110.0
+uvicorn[standard]>=0.28.0
+python-multipart>=0.0.9
+
+# Computer Vision & Facial Landmark Tracking
+opencv-python>=4.8.0
+mediapipe>=0.10.0
+
+# Scientific Computing & Signal Processing (rPPG & Coherence)
+numpy>=1.24.0
+scipy>=1.11.0
+
+# Machine Learning & Tabular Forensics Classification
+scikit-learn>=1.3.0
+
+# Forensic PDF Certificate Reporting
+reportlab>=4.0.0
+Pillow>=9.5.0
